@@ -502,6 +502,11 @@ const INTEGRATIONS: &[Integration] = &[
         description: "Block goose",
         binary: "goose",
     },
+    Integration {
+        name: "pool",
+        description: "Poolside CLI",
+        binary: "pool",
+    },
 ];
 
 fn print_integrations() {
@@ -605,6 +610,7 @@ fn launch(
         "qwen" => launch_qwen(model, api_key, extra_args),
         "dsh" => launch_dsh(model, api_key, vision, extra_args),
         "goose" => launch_goose(model, api_key, extra_args),
+        "pool" => launch_pool(model, extra_args),
         other => anyhow::bail!(
             "unknown integration {:?}\nRun 'llmman launch' without arguments to list supported integrations.",
             other
@@ -1785,6 +1791,30 @@ fn write_dsh_file(path: &Path, contents: &str) -> anyhow::Result<()> {
     }
     crate::fsutil::write_atomic(path, contents.as_bytes())
         .with_context(|| format!("write {}", path.display()))
+}
+
+/// pool: Poolside CLI, pointed at our /v1 endpoint.
+///
+/// Sets POOLSIDE_STANDALONE_BASE_URL and POOLSIDE_API_KEY.
+fn launch_pool(model: &str, extra_args: &[String]) -> anyhow::Result<()> {
+    let bin = find_on_path("pool").ok_or_else(|| anyhow::anyhow!("pool is not installed"))?;
+
+    let base_url = format!("{}/v1", daemon::server());
+
+    let mut args: Vec<String> = Vec::new();
+    if !model.is_empty() {
+        args.extend(["-m".to_string(), model.to_string()]);
+    }
+    args.extend_from_slice(extra_args);
+
+    exec_with_env(
+        &bin,
+        &args,
+        &[
+            ("POOLSIDE_STANDALONE_BASE_URL", base_url.as_str()),
+            ("POOLSIDE_API_KEY", "llmman"),
+        ],
+    )
 }
 
 // ---------------------------------------------------------------------------
