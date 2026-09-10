@@ -610,14 +610,7 @@ fn launch(
         "qwen" => launch_qwen(model, api_key, extra_args),
         "dsh" => launch_dsh(model, api_key, vision, extra_args),
         "goose" => launch_goose(model, api_key, extra_args),
-        "pool" => launch_pool(model, extra_args),
-        other => anyhow::bail!(
-            "unknown integration {:?}\nRun 'llmman launch' without arguments to list supported integrations.",
-            other
-        ),
-    }
-}
-
+        "pool" => launch_pool(model, api_key, extra_args),
 // ---------------------------------------------------------------------------
 // Per-integration launchers
 // ---------------------------------------------------------------------------
@@ -1796,7 +1789,10 @@ fn write_dsh_file(path: &Path, contents: &str) -> anyhow::Result<()> {
 /// pool: Poolside CLI, pointed at our /v1 endpoint.
 ///
 /// Sets POOLSIDE_STANDALONE_BASE_URL and POOLSIDE_API_KEY.
-fn launch_pool(model: &str, extra_args: &[String]) -> anyhow::Result<()> {
+fn launch_pool(model: &str, api_key: &str, extra_args: &[String]) -> anyhow::Result<()> {
+    if cfg!(windows) {
+        anyhow::bail!("pool is not supported on Windows");
+    }
     let bin = find_on_path("pool").ok_or_else(|| anyhow::anyhow!("pool is not installed"))?;
 
     let base_url = format!("{}/v1", daemon::server());
@@ -1812,7 +1808,7 @@ fn launch_pool(model: &str, extra_args: &[String]) -> anyhow::Result<()> {
         &args,
         &[
             ("POOLSIDE_STANDALONE_BASE_URL", base_url.as_str()),
-            ("POOLSIDE_API_KEY", "llmman"),
+            ("POOLSIDE_API_KEY", api_key),
         ],
     )
 }
