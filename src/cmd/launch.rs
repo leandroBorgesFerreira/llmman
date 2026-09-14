@@ -611,6 +611,13 @@ fn launch(
         "dsh" => launch_dsh(model, api_key, vision, extra_args),
         "goose" => launch_goose(model, api_key, extra_args),
         "pool" => launch_pool(model, api_key, extra_args),
+        other => anyhow::bail!(
+            "unknown integration {:?}\nRun 'llmman launch' without arguments to list supported integrations.",
+            other
+        ),
+    }
+}
+        
 // ---------------------------------------------------------------------------
 // Per-integration launchers
 // ---------------------------------------------------------------------------
